@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ingenious Irrigation — Astra Chat</title>
+
+  <!-- Inline favicon (neon droplet) so you don't get a 404 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%2339ff14'/%3E%3Cstop offset='1' stop-color='%2392ff7a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 6c6 12 18 19 18 30a18 18 0 11-36 0c0-11 12-18 18-30z' fill='url(%23g)' stroke='%2300c853' stroke-width='2'/%3E%3C/svg%3E" />
+
+  <style>
+    /* -----------------------------
+       THEME — dark chrome + neon
+       ----------------------------- */
+    :root{
+      --bg:#0b0c0c;
+      --chrome1:#141719;
+      --chrome2:#1c1f22;
+      --chrome3:#2a2e33;
+      --chrome4:#3a3f45;
+      --neon:#39ff14;
+      --neon-soft:#92ff7a;
+      --blue:#00b3ff;
+      --text:#e6f2e6;
+      --muted:#a6b5ae;
+      --danger:#ff5470;
+      --ok:#19e26a;
+      --shadow: 0 10px 30px rgba(0,0,0,.45);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text); background: radial-gradient(1200px 800px at 20% -10%, #0e1216 0%, #070808 40%, #050606 100%);
+      font: 16px/1.5 "Segoe UI", Roboto, Arial, sans-serif;
+      overflow:hidden;
+    }
+
+    /* Subtle animated star speckle for depth */
+    .bg-stars::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.07;
+      background:
+        radial-gradient(1px 1px at 20% 30%, #fff, transparent 60%),
+        radial-gradient(1px 1px at 80% 20%, #fff, transparent 60%),
+        radial-gradient(1px 1px at 50% 70%, #fff, transparent 60%),
+        radial-gradient(1px 1px at 10% 80%, #fff, transparent 60%),
+        radial-gradient(1px 1px at 70% 60%, #fff, transparent 60%);
+      animation: drift 100s linear infinite;
+    }
+    @keyframes drift{to{transform:translateY(300px)}}
+
+    header{
+      position:relative; z-index:2;
+      background:linear-gradient(180deg, var(--chrome2), var(--chrome1));
+      border-bottom:1px solid #1b2024;
+      padding:14px 18px;
+      display:flex; align-items:center; gap:12px;
+      box-shadow:var(--shadow);
+    }
+    .logo{
+      width:34px;height:34px;border-radius:10px;
+      background:
+        radial-gradient(circle at 30% 30%, #1a1f23 0 28px, transparent 28px),
+        linear-gradient(145deg, #0f1418, #161b1f);
+      position:relative; display:grid; place-items:center;
+      border:1px solid #2b3238;
+      box-shadow: inset 0 0 0 1px #0a0c0e, 0 0 12px rgba(57,255,20,.15);
+    }
+    .logo svg{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(57,255,20,.6))}
+    .brand{
+      display:flex; flex-direction:column;
+    }
+    .brand .title{font-weight:700; letter-spacing:.2px}
+    .brand .subtitle{font-size:12px; color:var(--muted)}
+
+    .spacer{flex:1}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      background:linear-gradient(180deg,var(--chrome3), #1f2429);
+      border:1px solid #2a3137; border-radius:999px; padding:6px 12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      font-size:13px; color:var(--muted);
+    }
+    .dot{width:8px;height:8px;border-radius:50%; background:var(--ok); box-shadow:0 0 10px var(--ok)}
+    .btn{
+      cursor:pointer; padding:8px 12px;
+      background:linear-gradient(180deg,#273138,#1a2026);
+      border:1px solid #2a3137; border-radius:10px; color:var(--text);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      transition: transform .08s ease, box-shadow .2s ease;
+    }
+    .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    .btn--neon{
+      background: radial-gradient(120% 120% at 20% 20%, #2a332d, #162017);
+      border-color:#284a2e; text-shadow:0 0 8px rgba(57,255,20,.3);
+    }
+    .btn svg{width:18px;height:18px; vertical-align:-3px}
+
+    /* Layout */
+    .shell{
+      position:relative; height:calc(100% - 66px); display:grid;
+      grid-template-rows: 1fr auto;
+      max-width:1100px; margin: 0 auto; padding: 18px;
+    }
+    .panel{
+      display:flex; gap:18px; height:100%;
+    }
+    .sidebar{
+      width:320px; min-width:260px; max-width:360px;
+      background:linear-gradient(180deg,var(--chrome2), var(--chrome1));
+      border:1px solid #1b2024; border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px; display:flex; flex-direction:column; gap:14px;
+    }
+    .card{
+      background:linear-gradient(180deg,var(--chrome3), #1c1f22);
+      border:1px solid #2a3137; border-radius:12px; padding:12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .card h3{margin:6px 0 10px 0; font-size:14px; color:#cfe6da; letter-spacing:.3px}
+
+    .avatar{
+      aspect-ratio: 16/9; border-radius:10px; overflow:hidden;
+      background:
+        radial-gradient(120% 120% at 80% 20%, rgba(57,255,20,.12), transparent 40%),
+        radial-gradient(120% 120% at 30% 80%, rgba(0,179,255,.12), transparent 40%),
+        linear-gradient(145deg,#151a1f,#0e1216);
+      border:1px solid #2a3137; position:relative;
+    }
+    .avatar .glow{
+      position:absolute; inset:auto auto 14px 14px; color:var(--neon); font-size:12px;
+      text-shadow:0 0 10px rgba(57,255,20,.6);
+      opacity:.8;
+    }
+
+    .schedule{
+      font-size:14px; color:#cfe6da; line-height:1.4;
+    }
+    .schedule small{color:var(--muted)}
+
+    /* Chat window */
+    .chat{
+      flex:1; min-width:0; height:100%;
+      background:linear-gradient(180deg,var(--chrome2), var(--chrome1));
+      border:1px solid #1b2024; border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .chat-header{
+      display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #1b2024;
+      background:linear-gradient(180deg,#1a1f24,#151a1f);
+    }
+    .chat-title{font-weight:600}
+    .chat-log{
+      flex:1; overflow:auto; padding:16px;
+      background:
+        radial-gradient(1600px 600px at 0% 0%, rgba(57,255,20,.05), transparent 50%),
+        radial-gradient(1200px 500px at 100% 0%, rgba(0,179,255,.06), transparent 50%),
+        linear-gradient(180deg,var(--chrome2), var(--chrome1));
+    }
+    .msg{
+      max-width:78%; padding:10px 12px; margin:8px 0; border-radius:14px; position:relative;
+      border:1px solid #2a3137;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      animation: rise .15s ease;
+    }
+    @keyframes rise{from{transform:translateY(4px); opacity:0} to{transform:none; opacity:1}}
+    .user{ margin-left:auto; background:linear-gradient(180deg,#1f2a1f,#111611); border-color:#2b462f }
+    .bot{ background:linear-gradient(180deg,#252c33,#1a2026) }
+    .msg .meta{ font-size:11px; color:var(--muted); margin-bottom:6px }
+    .msg .content{ white-space:pre-wrap }
+
+    .composer{
+      padding:12px; border-top:1px solid #1b2024; background:linear-gradient(180deg,#13181c,#0e1216);
+      display:flex; gap:10px; align-items:flex-end;
+    }
+    textarea{
+      flex:1; min-height:48px; max-height:160px; resize:vertical;
+      border-radius:12px; padding:12px 12px 12px 44px; color:var(--text);
+      border:1px solid #2a3137; background:linear-gradient(180deg,#1a2026,#12171b);
+      outline:none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .textarea-icon{
+      position:relative;
+    }
+    .textarea-icon svg{
+      position:absolute; left:12px; top:12px; width:18px; height:18px; opacity:.8; filter:drop-shadow(0 0 6px rgba(57,255,20,.35))
+    }
+    .send{
+      min-width:110px; height:48px;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      border-radius:12px; border:1px solid #2b462f;
+      color:#09110b; background:linear-gradient(180deg, #39ff14, #1dd40d);
+      text-shadow:0 0 10px rgba(255,255,255,.25);
+      box-shadow: 0 6px 18px rgba(57,255,20,.25), inset 0 0 0 1px rgba(255,255,255,.25);
+      cursor:pointer; font-weight:700;
+      transition: transform .05s ease;
+    }
+    .send:active{transform:translateY(1px)}
+    .hint{font-size:12px; color:var(--muted); padding:8px 12px}
+
+    /* Drawer */
+    .drawer{
+      position:fixed; top:0; right:-380px; width:360px; height:100%;
+      background:linear-gradient(180deg, #101417, #0c0f12);
+      border-left:1px solid #1b2024; box-shadow: -20px 0 40px rgba(0,0,0,.45);
+      z-index:5; transition:right .25s ease;
+      padding:16px;
+    }
+    .drawer.open{ right:0 }
+    .drawer h2{margin:4px 0 12px 0; font-size:18px}
+    .drawer .row{display:flex; gap:10px; margin:6px 0}
+    .drawer input, .drawer select{
+      width:100%; background:#12171b; color:var(--text); border:1px solid #2a3137; border-radius:10px; padding:10px;
+    }
+    .drawer .save{margin-top:8px}
+
+    /* Toasts */
+    .toast{
+      position:fixed; left:16px; bottom:16px; padding:10px 12px; border-radius:10px;
+      background:linear-gradient(180deg, #20262b, #151a1f); border:1px solid #2a3137; color:var(--text);
+      box-shadow: var(--shadow); z-index:6; display:none;
+    }
+    .toast.show{display:block; animation: fade .18s ease}
+    .toast .bad{color:var(--danger)}
+    @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .panel{flex-direction:column}
+      .sidebar{width:auto}
+      .shell{padding:12px}
+      .composer{flex-direction:column}
+      .send{width:100%}
+    }
+  </style>
+</head>
+<body class="bg-stars">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <!-- water drop -->
+      <svg viewBox="0 0 64 64" fill="none">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1">
+            <stop offset="0" stop-color="#39ff14"/>
+            <stop offset="1" stop-color="#92ff7a"/>
+          </linearGradient>
+        </defs>
+        <path d="M32 6c6 12 18 19 18 30a18 18 0 11-36 0c0-11 12-18 18-30z" fill="url(#g)" stroke="#19e26a" stroke-width="2"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <div class="title">Ingenious Irrigation</div>
+      <div class="subtitle">Astra — Your AI Sprinkler Tech</div>
+    </div>
+    <div class="spacer"></div>
+
+    <div class="pill" id="status-pill" title="AI connection status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+
+    <button class="btn btn--neon" id="open-drawer" title="Settings & Schedule">
+      <!-- sliders icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="17" r="2"/></svg>
+      Settings
+    </button>
+  </header>
+
+  <div class="shell" role="main">
+    <div class="panel" aria-label="Main panel">
+      <aside class="sidebar" aria-label="Overview">
+        <div class="avatar">
+          <div class="glow">Astra Online</div>
+        </div>
+        <div class="card">
+          <h3>Schedule</h3>
+          <div class="schedule" id="schedule-summary">Loading…</div>
+          <div class="hint">Tip: adjust schedule in <b>Settings</b>.</div>
+        </div>
+        <div class="card">
+          <h3>Quick Prompts</h3>
+          <div class="hint">
+            • “How long should I water today?”<br>
+            • “Skip tomorrow if it rains.”<br>
+            • “Explain why you changed my runtime.”<br>
+          </div>
+        </div>
+      </aside>
+
+      <section class="chat" aria-label="Chat">
+        <div class="chat-header">
+          <div class="chat-title">Conversation</div>
+          <div class="spacer"></div>
+          <button class="btn" id="clear-chat" title="Clear messages">
+            <!-- trash -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+            Clear
+          </button>
+        </div>
+
+        <div class="chat-log" id="log" tabindex="0" aria-live="polite">
+          <!-- Messages will be appended here -->
+        </div>
+
+        <div class="composer">
+          <div class="textarea-icon">
+            <!-- sparkles -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="1.6"><path d="M12 3l1.6 3.6L17 8l-3.4 1.4L12 13l-1.6-3.6L7 8l3.4-1.4L12 3zM19 14l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2zM5 14l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2z"/></svg>
+            <textarea id="msg" placeholder="Ask Astra anything… (Shift+Enter = new line)" aria-label="Message to Astra"></textarea>
+          </div>
+          <button class="send" id="send" aria-label="Send message">
+            <!-- paper plane -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0a1b0e" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Send
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Drawer (Settings / Schedule) -->
+  <div class="drawer" id="drawer" aria-label="Settings drawer" aria-hidden="true">
+    <h2>Settings & Schedule</h2>
+
+    <div class="card">
+      <h3>Schedule</h3>
+      <div class="row">
+        <label style="flex:1">
+          <div class="hint" style="padding:0">Zone</div>
+          <input id="zone" type="number" min="1" value="1" />
+        </label>
+        <label style="flex:1">
+          <div class="hint" style="padding:0">Start (HH:MM)</div>
+          <input id="start_time" type="time" value="05:00" />
+        </label>
+      </div>
+      <div class="row">
+        <label style="flex:1">
+          <div class="hint" style="padding:0">Duration (min)</div>
+          <input id="duration_min" type="number" min="1" value="10" />
+        </label>
+        <label style="flex:1">
+          <div class="hint" style="padding:0">Frequency</div>
+          <select id="frequency">
+            <option value="daily">Daily</option>
+            <option value="every_other_day">Every other day</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn btn--neon save" id="save-schedule">Save schedule</button>
+    </div>
+
+    <div class="card">
+      <h3>AI</h3>
+      <div class="hint">Model is set by the server (<code>II_CHAT_MODEL</code>). Change it in your <code>.env</code> if needed.</div>
+    </div>
+
+    <div class="hint">Close this panel with the button in the header.</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // -----------------------------
+    // Small helper functions
+    // -----------------------------
+    const $ = sel => document.querySelector(sel);
+    const logEl = $('#log');
+    const msgEl = $('#msg');
+    const sendBtn = $('#send');
+    const toast = $('#toast');
+    const statusDot = $('#status-dot');
+    const statusText = $('#status-text');
+    const scheduleSummary = $('#schedule-summary');
+
+    function showToast(text, isBad=false){
+      toast.innerHTML = isBad ? "<span class='bad'>⚠</span> " + text : text;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 3000);
+    }
+
+    function setStatus(ok, text){
+      statusDot.style.background = ok ? "var(--ok)" : "var(--danger)";
+      statusDot.style.boxShadow = ok ? "0 0 10px var(--ok)" : "0 0 10px var(--danger)";
+      statusText.textContent = text;
+    }
+
+    function addMessage(role, text){
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const who = role === 'user' ? 'You' : 'Astra';
+      const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      // Use template literal for meta
+      meta.textContent = `${who} · ${ts}`;
+      const content = document.createElement('div');
+      content.className = 'content';
+      content.textContent = text;
+      wrap.appendChild(meta);
+      wrap.appendChild(content);
+      logEl.appendChild(wrap);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function loadSchedule(){
+      try{
+        const r = await fetch('/api/schedule');
+        const j = await r.json();
+        if(!j.ok) throw new Error('Failed to load schedule');
+        const s = j.schedule;
+        // Use template literal for schedule text
+        scheduleSummary.textContent = `Zone ${s.zone} at ${s.start_time} · ${s.duration_min} min · ${s.frequency}`;
+        // Fill drawer fields
+        $('#zone').value = s.zone;
+        $('#start_time').value = s.start_time;
+        $('#duration_min').value = s.duration_min;
+        $('#frequency').value = s.frequency;
+      }catch(e){
+        scheduleSummary.textContent = 'Unable to load schedule.';
+        showToast('Could not load schedule', true);
+      }
+    }
+
+    // Probe AI by sending a tiny no-op (we won't do that, we’ll infer from first reply)
+    setStatus(true, 'Ready');
+
+    // Events
+    sendBtn.addEventListener('click', async ()=>{
+      const text = msgEl.value.trim();
+      if(!text) return;
+      addMessage('user', text);
+      msgEl.value = '';
+      try{
+        setStatus(true, 'Thinking…');
+        const r = await fetch('/api/chat', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({message:text})
+        });
+        const j = await r.json();
+        if(!j.ok) throw new Error('Server rejected request');
+        addMessage('bot', j.reply);
+        // If fallback text is present, mark status gracefully
+        if(String(j.reply).toLowerCase().includes('(fallback mode)')){
+          setStatus(false, 'Fallback (API key?)');
+        }else{
+          setStatus(true, 'Online');
+        }
+      }catch(e){
+        addMessage('bot', 'Sorry, I could not reach the server.');
+        setStatus(false, 'Offline');
+        showToast('Network error while chatting', true);
+      }
+    });
+
+    msgEl.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault(); sendBtn.click();
+      }
+    });
+
+    // Drawer controls
+    const drawer = $('#drawer');
+    $('#open-drawer').addEventListener('click', ()=>{
+      const open = !drawer.classList.contains('open');
+      drawer.classList.toggle('open', open);
+      drawer.setAttribute('aria-hidden', String(!open));
+    });
+
+    $('#save-schedule').addEventListener('click', async ()=>{
+      const payload = {
+        zone: Number($('#zone').value),
+        start_time: $('#start_time').value,
+        duration_min: Number($('#duration_min').value),
+        frequency: $('#frequency').value
+      };
+      try{
+        const r = await fetch('/api/schedule', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!j.ok) throw new Error('Failed saving schedule');
+        scheduleSummary.textContent = `Zone ${j.schedule.zone} at ${j.schedule.start_time} · ${j.schedule.duration_min} min · ${j.schedule.frequency}`;
+        showToast('Schedule saved');
+      }catch(e){
+        showToast('Could not save schedule', true);
+      }
+    });
+
+    $('#clear-chat').addEventListener('click', ()=>{
+      logEl.innerHTML = '';
+      showToast('Chat cleared');
+    });
+
+    // Initial load
+    addMessage('bot', 'Hi, I’m Astra. Ask me anything about your watering schedule, overrides, or lawn health. 🌱');
+    loadSchedule();
+  </script>
+</body>
+</html>
