@@ -1,0 +1,135 @@
+# voice_personality.py
+"""
+Voice personality templates for Ingenious Irrigation.
+
+Contains:
+- A set of prebuilt textual templates (playful and technical)
+- Functions to render SSML snippets for TTS engines that accept SSML
+- Small utility to randomly pick or select by style
+
+You can expand the phrases or connect these to your TTS engine (e.g., pyttsx3, Google TTS, AWS Polly).
+If using local TTS on the Pi (e.g., espeak/tts), you can strip SSML to plain text.
+
+Example usage:
+    from voice_personality import VoicePersonality
+    vp = VoicePersonality(style="playful")
+    text = vp.event_watering_started(zone_name="Front Lawn", duration=10)
+    ssml = vp.to_ssml(text, voice="female")
+"""
+from dataclasses import dataclass
+import random
+import html
+
+PLAYFUL_LINES = {
+    "start": [
+        "Good morning! Front lawn, you're up — let's make you lush. Starting zone {zone} for {duration} minutes.",
+        "Booting the sprinklers — hydration time! Zone {zone} running for {duration} minutes.",
+        "Water delivery en route! Zone {zone} will get {duration} minutes of juicy goodness."
+    ],
+    "stop": [
+        "All done — zone {zone} finished after {duration} minutes. Go on, soak up the compliments.",
+        "That's a wrap for zone {zone}. Watering stopped; lawn looks forward to a nap.",
+        "Zone {zone} complete. If the grass could text back, it would."
+    ],
+    "skip": [
+        "Skipping watering for zone {zone} — the clouds are on duty today.",
+        "No need to water zone {zone} — moisture levels are looking smug.",
+        "Pause: zone {zone} skipped. Mother Nature is handling this one."
+    ],
+    "error": [
+        "Heads-up — I couldn't run zone {zone} because {reason}. Check the controller.",
+        "Uh-oh, a hiccup when starting zone {zone}: {reason}. I'll hold off until you say otherwise."
+    ],
+    "status": [
+        "Status: Zone {zone} is {state}. Hydration score: {score}/10.",
+        "Quick update for {zone}: {state}. Hydration reading: {score}/10."
+    ]
+}
+
+TECHNICAL_LINES = {
+    "start": [
+        "Initiating irrigation cycle for zone {zone}. Target duration: {duration} minutes.",
+        "Opening valve for zone {zone} for {duration} minutes as scheduled.",
+    ],
+    "stop": [
+        "Irrigation cycle ended for zone {zone}. Actual duration: {duration} minutes.",
+        "Valve closed for zone {zone}. Event recorded in the logs."
+    ],
+    "skip": [
+        "Watering skipped for zone {zone} due to weather override: {reason}.",
+        "Scheduled run canceled for zone {zone} — override triggered ({reason})."
+    ],
+    "error": [
+        "Error: failed to actuate zone {zone}. Reason: {reason}. See logs for traceback.",
+        "Actuation error on zone {zone}: {reason}. Hardware diagnostics recommended."
+    ],
+    "status": [
+        "Zone {zone}: {state}. Hydration metric: {score}/10. Next scheduled run: {next_run}.",
+    ]
+}
+
+
+@dataclass
+class VoicePersonality:
+    style: str = "playful"  # or 'technical'
+    female_pitch_adjust: float = 1.0  # multiplier hint for SSML prosody
+    male_pitch_adjust: float = 0.95
+
+    def _pick(self, key: str, **kwargs) -> str:
+        pool = PLAYFUL_LINES if self.style == "playful" else TECHNICAL_LINES
+        lines = pool.get(key, [])
+        if not lines:
+            return ""
+        template = random.choice(lines)
+        return template.format(**kwargs)
+
+    def event_watering_started(self, zone_name: str, duration: int):
+        return self._pick("start", zone=zone_name, duration=duration)
+
+    def event_watering_stopped(self, zone_name: str, duration: float):
+        return self._pick("stop", zone=zone_name, duration=round(duration, 1))
+
+    def event_skipped(self, zone_name: str, reason: str):
+        return self._pick("skip", zone=zone_name, reason=reason)
+
+    def event_error(self, zone_name: str, reason: str):
+        return self._pick("error", zone=zone_name, reason=reason)
+
+    def status_update(self, zone_name: str, state: str, score: float = None, next_run: str = None):
+        kwargs = {"zone": zone_name, "state": state, "score": score or "-", "next_run": next_run or "unknown"}
+        return self._pick("status", **kwargs)
+
+    def to_ssml(self, text: str, voice: str = "female", rate: str = "medium", additional_tags: dict = None):
+        """
+        Convert a plain text into an SSML snippet suitable for TTS engines that accept SSML.
+        - voice: hint string; many cloud TTS providers map to voice names rather than 'female'/'male'.
+        - rate: 'slow'|'medium'|'fast' or "x%" for engines that accept it.
+        - additional_tags: optional dict for more SSML control.
+
+        Note: Different TTS services expect slightly different SSML roots — you may need to adapt 'voice' tags.
+        This function uses a simple, broadly compatible SSML template.
+        """
+        # basic escaping to avoid breaking ssml
+        safe = html.escape(text)
+        pitch = "0%"
+        if voice == "female":
+            pitch = f"{int((self.female_pitch_adjust - 1.0) * 100)}%"
+        elif voice == "male":
+            pitch = f"{int((self.male_pitch_adjust - 1.0) * 100)}%"
+
+        prosody_attrs = f' rate="{rate}" pitch="{pitch}"'
+        # allow additional attributes if provided
+        if additional_tags:
+            for k, v in additional_tags.items():
+                prosody_attrs += f' {k}="{html.escape(str(v))}"'
+
+        ssml = f'<speak><prosody{prosody_attrs}>{safe}</prosody></speak>'
+        return ssml
+
+
+# quick demo
+if __name__ == "__main__":
+    vp = VoicePersonality(style="playful")
+    print(vp.event_watering_started("Front Lawn", 10))
+    print(vp.event_skipped("Back Yard", "0.6 inches of rain recorded in past 24h"))
+    print(vp.to_ssml("Starting zone Front Lawn for 10 minutes.", voice="female", rate="medium"))
