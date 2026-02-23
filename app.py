@@ -56,6 +56,17 @@ DEFAULT_SCHEDULE = {"zones": {"1": {"minutes": 10, "enabled": True}}}
 
 app = Flask(__name__, static_folder=str(STATIC), template_folder=str(TEMPLATES))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+ }
+
+DEFAULT_SCHEDULE = {
+    "zones": {
+        "1": {"minutes": 10, "enabled": True},
+        "2": {"minutes": 10, "enabled": True},
+        "3": {"minutes": 10, "enabled": True},
+        "4": {"minutes": 10, "enabled": True},
+        "5": {"minutes": 10, "enabled": True},
+        "6": {"minutes": 10, "enabled": True},
+    }
 
 
 def load_schedule() -> dict:
