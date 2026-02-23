@@ -1,5 +1,7 @@
 # Removed duplicate minimal loader; main application with schedule API is defined below.
 # app.py — UI + basic schedule API so the dashboard stays "online"
+from flask import Flask, request, jsonify
+from astra_assistant import AstraAssistant, WELCOME_MESSAGE
 from pathlib import Path
 import json
 from flask import Flask, render_template, send_from_directory, request, jsonify
@@ -53,6 +55,33 @@ def astra_speak():
     return jsonify({"audio": encoded})
 SCHEDULE_JSON = DATA / "schedule.json"
 DEFAULT_SCHEDULE = {"zones": {"1": {"minutes": 10, "enabled": True}}}
+# Create a single assistant instance (optionally pass an OpenAI API key)
+astra = AstraAssistant(llm_api_key="YOUR-OPENAI-KEY-HERE")
+
+@app.get("/astra/hello")
+def astra_hello() -> Any:
+    """
+    Simple GET endpoint for initial handshake with Astra.
+    """
+    return jsonify({"reply": WELCOME_MESSAGE})
+
+@app.post("/astra/speak")
+def astra_speak() -> Any:
+    """
+    POST endpoint for chatting with Astra. Expects JSON {"text": "..."}.
+    Returns JSON {"reply": "..."}.
+    """
+    data = request.get_json(silent=True) or {}
+    user_text = (data.get("text") or "").strip()
+
+    if not user_text:
+        return jsonify({"reply": "Please send a non-empty message."}), 400
+
+    # Delegate to the assistant
+    reply = astra.respond(user_text)
+    return jsonify({"reply": reply})
+
+# ... other routes and app setup ...
 
 def load_schedule():
     if not SCHEDULE_JSON.exists():
